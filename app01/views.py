@@ -62,3 +62,126 @@ def book_list(request):
     book_obj_list = models.Book.objects.all()
     # 2.将数据放到页面上
     return render(request, 'book_list.html', {"book_obj_list": book_obj_list})
+
+
+# 添加图书
+def add_book(request):
+    if request.method == 'POST':
+        # 1获取表单提价过来的内容
+        name = request.POST.get('name')
+        price = request.POST.get("price")
+        inventory = request.POST.get("inventory")
+        sale_num = request.POST.get("sale_num")
+        publisher_id = request.POST.get('publisher_id')
+        # 2.保存到数据库app01_book
+        models.Book.objects.create(name=name, price=price, inventory=inventory, sale_num=sale_num,
+                                   publisher_id=publisher_id)
+        # 3.重定向到图书列表页面
+        return redirect('/app01/book_list/')
+    else:
+        # 1获取所有出版社
+        publisher_obj_list = models.publisher.objects.all()
+        return render(request, "add_book.html", {"publisher_obj_list": publisher_obj_list})
+
+
+# 编辑图书
+def edit_book(request):
+    if request.method == 'GET':
+        # 1.获取id
+        id = request.GET.get('id')
+        # 2.取数据库中查找相应数据
+        book_obj = models.Book.objects.filter(id=id).first()
+        # 3.查找所有的出版社
+        publisher_list = models.publisher.objects.all()
+        # 4 返回页面
+        return render(request, 'edit_book.html', {'book_obj': book_obj, 'publisher_list': publisher_list})
+    else:
+        # 1.获取表单提交过来的内容
+        id = request.POST.get('id')
+        name = request.POST.get('name')
+        inventory = request.POST.get("inventory")
+        price = request.POST.get("price")
+        sale_num = request.POST.get("sale_num")
+        publisher_id = request.POST.get('publisher_id')
+        # 2.查询数据库进行更新
+        models.Book.objects.filter(id=id).update(name=name, inventory=inventory, price=price, sale_num=sale_num,
+                                                 publisher_id=publisher_id)
+        # 3.重定向到boo_list
+        return redirect("/app01/book_list")
+
+
+# 删除图书
+def delete_book(request):
+    # 1.获取id
+    id = request.GET.get("id")
+    # 2. 删除图书
+    models.Book.objects.filter(id=id).delete()
+    # 重定向到图书列表
+    return redirect("/app01/book_list")
+
+
+# 作者列表
+def author_list(request):
+    ret_list = []
+    author_obj_list = models.Author.objects.all()
+    for author_obj in author_obj_list:
+        book_obj_list = author_obj.book.all()
+        ret_dic = {}
+        ret_dic['author_obj'] = author_obj
+        ret_dic['book_list'] = book_obj_list
+        ret_list.append(ret_dic)
+    return render(request, 'author_list.html', {'ret_list': ret_list})
+
+
+# 添加作者
+def add_author(request):
+    if request.method == 'GET':
+        # 1获取所有的图书
+        book_obj_list = models.Book.objects.all()
+        # 2返回页面
+        return render(request, 'add_author.html', {'book_obj_list': book_obj_list})
+    else:
+        # 1.获取表单提交过来的数据
+        name = request.POST.get('name')
+        book_ids = request.POST.getlist('books')
+        # 2 保存数据库
+        author_obj = models.Author.objects.create(name=name)  # 创建对象
+        author_obj.book.set(book_ids)  # 设置关系
+        # 3 重定向到列表页面
+        return redirect('/app01/author_list/')
+
+
+# 修改作者
+def edit_author(request):
+    if request.method == 'GET':
+        # 1.获取id
+        id = request.GET.get('id')
+        # 2查询对象和所有的图书
+        author_obj = models.Author.objects.get(id=id)
+        book_obj_list = models.Book.objects.all()
+        # 3返回页面
+        return render(request, 'edit_author.html',
+                      {'author_obj': author_obj, 'book_obj_list': book_obj_list})
+    else:
+        # 保存修改的数据
+        # 1.获取表单提交过来的内容
+        id = request.POST.get('id')
+        name = request.POST.get('name')
+        book_ids = request.POST.getlist('books')
+        # 2,根据id 查找对象，并修改
+        author_obj = models.Author.objects.filter(id=id).first()
+        author_obj.name = name
+        author_obj.book.set(book_ids)
+        author_obj.save()
+        # 3.重定向到作者列表
+        return redirect('/app01/author_list/')
+
+
+# 删除作者
+def delete_author(request):
+    # 1 获取id
+    id = request.GET.get("id")
+    # 2删除作者
+    models.Author.objects.filter(id=id).delete()
+    # 重定向作者列表
+    return redirect("/app01/author_list")
